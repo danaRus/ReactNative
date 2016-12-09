@@ -1,8 +1,3 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- * @flow
- */
 'use strict';
 
 import React, { Component } from 'react';
@@ -16,34 +11,28 @@ import {
   TouchableNativeFeedback,
   ToastAndroid,
   ScrollView,
-  Linking
+  Linking,
+  Alert
 } from 'react-native';
+import {readCar, saveCar, readAllCars, clearAllCars, updateCar, removeCar} from './src/Storage';
+import {Car} from './src/Car';
 
-var CARS_DATA = [
-  {make: 'Make1', model: 'Model1', year: '2001'},
-  {make: 'Make2', model: 'Model2', year: '2002'},
-  {make: 'Make3', model: 'Model3', year: '2003'},
-  {make: 'Make4', model: 'Model4', year: '2004'},
-  {make: 'Make5', model: 'Model5', year: '2005'},
-  {make: 'Make6', model: 'Model6', year: '2006'},
-  {make: 'Make7', model: 'Model7', year: '2007'},
-  {make: 'Make8', model: 'Model8', year: '2008'},
-  {make: 'Make9', model: 'Model9', year: '2009'},
-  {make: 'Make10', model: 'Model10', year: '2010'},
- ];
+var CARS_DATA = [];
 
 class CarList extends Component {
 	constructor(props) {
 		super(props);
 		this.callbackFunctionNew = this.callbackFunctionNew	.bind(this);
 		this.callbackFunction = this.callbackFunction.bind(this);
+		
+		this.callbackGetOne = this.callbackGetOne.bind(this);
+		
 		this.state = {
 			dataSource: new ListView.DataSource({
 				rowHasChanged: (row1, row2) => row1 !== row2,
 			}),
 			loaded: false,
 		};
-		
 	}
 	
 	componentDidMount() {
@@ -51,35 +40,47 @@ class CarList extends Component {
 	}
 	
 	fetchData() {
+		CARS_DATA = [];
+		readAllCars(this.callbackGetOne);
 		this.setState({
-			dataSource: this.state.dataSource.cloneWithRows(CARS_DATA),
 			loaded: true,
         });
 	}
-	callbackFunction(args, index) {
-		var newData = CARS_DATA.slice();
-		newData[index] = args;
-		this.setState({
-			dataSource: this.state.dataSource.cloneWithRows(newData),
-        });
-		CARS_DATA = newData.slice();
-		ToastAndroid.show('The car has been modified', ToastAndroid.SHORT);
-	};
 	
-	callbackFunctionNew(args) {
-		CARS_DATA.push(args);
+	callbackFunction(args) {
+		updateCar(args);
+		CARS_DATA = [];
+		this.fetchData();
 		
-		this.setState({
-			dataSource: this.state.dataSource.cloneWithRows(CARS_DATA),
-        });
+		ToastAndroid.show('The car has been modified', ToastAndroid.SHORT);
+	};	
+	
+	callbackFunctionNew(args) {		
+		saveCar(args);
 		
 		ToastAndroid.show('A new car has been inserted', ToastAndroid.SHORT);
 	
-		var body = 'The car : Car{make =' + args['make'] + ', model=' + args['model'] + ', year=' + args['year'];
+		var body = 'The car : Car{make =' + args['make'] + ', model=' + args['model'] + ', year=' + args['year'] + ', price=' + args['price'];
 		var firstMailURL = 'mailto:anad_95@yahoo.com?subject=Car Insertion&body='.concat(body);
 		var finalBoby = '} has been inserted.'
 		var mailURL = firstMailURL.concat(finalBoby);
 		Linking.openURL(mailURL).catch(err => console.error('An error occurred', err));
+		CARS_DATA = [];
+		this.fetchData();
+	}
+	
+	callbackGetOne(args) {
+		CARS_DATA.push(args);
+		
+		this.setState({
+			dataSource: this.state.dataSource.cloneWithRows(CARS_DATA),
+		});
+	}
+	
+	deleteCar(model) {
+		CARS_DATA = [];
+		removeCar(model);
+		this.fetchData();
 	}
 	
 	render() {
@@ -96,16 +97,28 @@ class CarList extends Component {
 				dataSource={this.state.dataSource}
         
 				renderRow={(data) => 
-					<TouchableOpacity onPress={()=> this.props.navigator.push({index: 1,
+					<TouchableOpacity 
+					onPress={()=> this.props.navigator.push({index: 1,
 						passProps:{
 							make: data.make, 
 							model: data.model,
 							year: data.year,
-							position: CARS_DATA.indexOf(data),
+							price: data.price,
+							stock: data.stock,
 							callback: this.callbackFunction,
 						},
-						}
-					)}>
+						},)
+					}
+					onLongPress={()=> Alert.alert(
+										  'Delete',
+										  'This car will be deleted.',
+										  [
+											{text: 'Cancel'},
+											{text: 'Delete', onPress: () => this.deleteCar(data.model)},
+										  ]
+										)
+					}
+					>
 						<View>
 							<Text style={styles.make}>{data.make}</Text>
 							<Text>{data.model}</Text>

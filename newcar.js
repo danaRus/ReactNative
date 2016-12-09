@@ -8,20 +8,39 @@ import {
    View,
    TextInput,
    TouchableNativeFeedback,
-   ToastAndroid
+   ToastAndroid,
+   TouchableOpacity,
+   DatePickerAndroid
 } from 'react-native';
 
 
 class NewCar extends Component {
 	constructor(props){
 		super(props);
-		this.state = {make : '', model : '', year: ''};
+		this.state = {make : '', model : '', year: 'Year', price:'', stock:''};
 	}
   
 	saveCar() {
-		var newCar = {make: this.state.make, model: this.state.model, year: this.state.year}; 
+		var newCar = {make: this.state.make, model: this.state.model, year: this.state.year, price: this.state.price, stock: this.state.stock};
 		this.props.callback(newCar);
 		this.props.navigator.pop();
+	};
+	
+	showPicker = async (options) => {
+		try {
+		  const {action, year} = await DatePickerAndroid.open(options);
+		  if (action === DatePickerAndroid.dismissedAction) {
+			
+		  } else {
+			var date = new Date(year, 1, 1);
+			this.setState({
+				year: year,
+			});
+		  }
+		  
+		} catch ({code, message}) {
+			ToastAndroid.show('Error: ' + message, ToastAndroid.SHORT);
+		}
 	};
   
 	render() {
@@ -29,7 +48,14 @@ class NewCar extends Component {
 			<View style={styles.container}>
 				<TextInput placeholder='Make' onChangeText={(make) => this.setState({make})} value={this.state.make} />
 				<TextInput placeholder='Model' onChangeText={(model) => this.setState({model})} value={this.state.model} />
-				<TextInput placeholder='Year' onChangeText={(year) => this.setState({year})} value={this.state.year} />
+				<TouchableOpacity
+					onPress={this.showPicker.bind(this, {
+					  date: new Date(),
+					})}>
+					<Text style={styles.text}>{this.state.year}</Text>
+				</TouchableOpacity>
+				<TextInput placeholder='Price' onChangeText={(price) => this.setState({price})} value={this.state.price} />
+				<TextInput placeholder='Stock' onChangeText={(stock) => this.setState({stock})} value={this.state.stock} />
 		 
 				<TouchableNativeFeedback
 					onPress={() => this.saveCar()}>
