@@ -3,11 +3,14 @@ import {
 	StyleSheet,
 	View,
 	Text,
-	TouchableOpacity
+	TouchableOpacity,
+	ToastAndroid
 } from 'react-native';
 import Chart from 'react-native-chart';
 import { Dimensions } from 'react-native';
 import {readAllCars} from './src/Storage';
+
+import Database from "./firebase/database.js";
 
 var {height, width} = Dimensions.get('window');
 
@@ -30,21 +33,21 @@ export class SimpleChart extends Component {
 	
 	constructor(props) {
 		super(props);
-		this.callbackGetOne = this.callbackGetOne.bind(this);
 	}
 	
-	componentDidMount() {
+	componentWillMount() {
 		this.getData();
 	}
 	
 	getData() {
 		readData = [];
-		readAllCars(this.callbackGetOne);
-	}
-	
-	callbackGetOne(args) {
-		value = [args.model, args.price];
-		readData.push(value);
+		cars = Database.getCars();
+		if(cars !== null) {
+			for (i = 0; i < cars.length; i++) {
+				value = [cars[i].model, cars[i].price];
+				readData.push(value);
+			}
+		}
 	}
 	
     render() {

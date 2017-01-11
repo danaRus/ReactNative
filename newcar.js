@@ -13,15 +13,19 @@ import {
    DatePickerAndroid
 } from 'react-native';
 
+import Database from "./firebase/database.js";
+var uuid = require('react-native-uuid');
 
 class NewCar extends Component {
 	constructor(props){
 		super(props);
 		this.state = {make : '', model : '', year: 'Year', price:'', stock:''};
 	}
-  
+	
 	saveCar() {
-		var newCar = {make: this.state.make, model: this.state.model, year: this.state.year, price: this.state.price, stock: this.state.stock};
+		var uuidVar = uuid.v4();
+		var newCar = {make: this.state.make, model: this.state.model, year: this.state.year, price: this.state.price, stock: this.state.stock, uuid: uuidVar};
+		Database.addCar(newCar);
 		this.props.callback(newCar);
 		this.props.navigator.pop();
 	};

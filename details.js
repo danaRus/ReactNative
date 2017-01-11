@@ -15,6 +15,8 @@ import {
 import {Car} from './src/Car';
 import { SimpleChart } from './chart.js'
 
+import Database from "./firebase/database.js";
+
 class CarDetail extends Component {
 	constructor(props){
 		super(props);
@@ -22,7 +24,8 @@ class CarDetail extends Component {
 	}
   
 	editCar() {
-		var editedCar = new Car(this.state.make, this.props.model, this.state.year, this.state.price, this.state.stock);
+		var editedCar = new Car(this.state.make, this.props.model, this.state.year, this.state.price, this.state.stock, this.props.uuid);
+		Database.updateCar(editedCar);
 		this.props.callback(editedCar);
 		this.props.navigator.pop();
 	};

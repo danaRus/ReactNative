@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import {readCar, saveCar, readAllCars, clearAllCars, updateCar, removeCar} from './src/Storage';
 import {Car} from './src/Car';
+import Database from "./firebase/database.js";
 
 var CARS_DATA = [];
 
@@ -40,24 +41,33 @@ class CarList extends Component {
 	}
 	
 	fetchData() {
-		CARS_DATA = [];
-		readAllCars(this.callbackGetOne);
+		if(Database.carsRef !== null) {
+			// when an object is added, changed, or removed, you get the entire result set back as a DataSnapshot, from the Firebase SDK
+			Database.carsRef.on('value', (snap) => {
+				// get children as an array
+				var cars = [];
+				snap.forEach((child) => {
+					cars.push(child.val());
+				});
+			
+				CARS_DATA = cars.slice();
+				this.setState({
+					dataSource: this.state.dataSource.cloneWithRows(CARS_DATA),
+				});
+				Database.initializeCars(cars);
+			});
+		}
+		
 		this.setState({
 			loaded: true,
         });
 	}
 	
 	callbackFunction(args) {
-		updateCar(args);
-		CARS_DATA = [];
-		this.fetchData();
-		
 		ToastAndroid.show('The car has been modified', ToastAndroid.SHORT);
 	};	
 	
 	callbackFunctionNew(args) {		
-		saveCar(args);
-		
 		ToastAndroid.show('A new car has been inserted', ToastAndroid.SHORT);
 	
 		var body = 'The car : Car{make =' + args['make'] + ', model=' + args['model'] + ', year=' + args['year'] + ', price=' + args['price'];
@@ -65,8 +75,6 @@ class CarList extends Component {
 		var finalBoby = '} has been inserted.'
 		var mailURL = firstMailURL.concat(finalBoby);
 		Linking.openURL(mailURL).catch(err => console.error('An error occurred', err));
-		CARS_DATA = [];
-		this.fetchData();
 	}
 	
 	callbackGetOne(args) {
@@ -77,10 +85,8 @@ class CarList extends Component {
 		});
 	}
 	
-	deleteCar(model) {
-		CARS_DATA = [];
-		removeCar(model);
-		this.fetchData();
+	deleteCar(uuid) {
+		Database.deleteCar(uuid);
 	}
 	
 	render() {
@@ -105,6 +111,7 @@ class CarList extends Component {
 							year: data.year,
 							price: data.price,
 							stock: data.stock,
+							uuid: data.uuid,
 							callback: this.callbackFunction,
 						},
 						},)
@@ -114,7 +121,7 @@ class CarList extends Component {
 										  'This car will be deleted.',
 										  [
 											{text: 'Cancel'},
-											{text: 'Delete', onPress: () => this.deleteCar(data.model)},
+											{text: 'Delete', onPress: () => this.deleteCar(data.uuid)},
 										  ]
 										)
 					}
